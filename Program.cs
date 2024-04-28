@@ -9,13 +9,11 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        // URL da API Random User Generator
+        // URL para colsuta e lista para armazenar os dados de usuários
         string apiUrl = "https://randomuser.me/api/?results=5";
-
-        // Lista para armazenar os dados dos usuários
         List<User> users = new List<User>();
 
-        // Criação de um objeto HttpClient
+        // Criação do objeto HttpClient
         using (HttpClient client = new HttpClient())
         {
             try
@@ -23,34 +21,29 @@ class Program
                 // Faz uma solicitação GET à API
                 HttpResponseMessage response = await client.GetAsync(apiUrl);
 
-                // Verifica se a solicitação foi bem-sucedida
+                // Verifica se a requisição teve sucesso 
                 if (response.IsSuccessStatusCode)
                 {
-                    // Lê o conteúdo da resposta como uma string
+                    // ler o conteudo como string e converter o JSON para objeto UserResult
                     string json = await response.Content.ReadAsStringAsync();
 
-                    // Converte o JSON para um objeto UserResult
                     UserResult result = JsonConvert.DeserializeObject<UserResult>(json);
 
-                    // Verifica se foram retornados resultados
+                    // Verifica se retornaram resultados - adicionar usurios a lista e conectar com o banco de dados 
                     if (result != null && result.results.Length > 0)
                     {
-                        // Adiciona os usuários à lista
                         users.AddRange(result.results);
 
-                        // String de conexão com o PostgreSQL
                         string connectionString = "Host=localhost;Port=5432;Database=random_api_bd;Username=postgres;Password=Bd123@;";
 
-                        // Conectar ao banco de dados
                         using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
                         {
                             await connection.OpenAsync();
 
-                            // Iterar sobre os usuários e inseri-los na tabela
+                            // inseri dados na tabela do banco de dados
                             foreach (User user in users)
                             {
-                          
-                                string name = $"{user.name.first} {user.name.last}";
+                                string name = $"{user.name.first} {user.name.last}"; //concatenando o prim nome e o sobrenome
 
                                 string sql = "INSERT INTO users (name, age, email, country) VALUES (@Name, @Age, @Email, @Country)";
                                 using (NpgsqlCommand command = new NpgsqlCommand(sql, connection))
@@ -81,6 +74,7 @@ class Program
             {
                 Console.WriteLine($"Ocorreu um erro: {ex.Message}");
             }
+
         }
     }
 }
